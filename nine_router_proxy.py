@@ -236,7 +236,7 @@ class Config:
             "proxy_batch_size": 10,
             "max_workers": 10,
             "test_timeout": 2.0,
-            "api_url": "https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=5000&ssl=yes&anonymity=all&country=all&simplified=true&sort=last_checked",
+            "api_url": "https://api.proxyscrape.com/v4/free-proxy-list/get?protocol=http&timeout=10000&country=all&ssl=all&anonymity=all&limit=2000&request=getproxies&simplified=false",
             "test_endpoints": [
                 "http://httpbin.org/ip",
                 "http://ifconfig.io",
