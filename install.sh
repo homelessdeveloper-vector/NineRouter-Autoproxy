@@ -93,6 +93,25 @@ else
 fi
 
 echo
+if command -v 9router >/dev/null 2>&1 || command -v 9Router >/dev/null 2>&1; then
+  echo "9Router detected on this system."
+else
+  echo "Warning: 9Router was not detected. Installing a placeholder helper in ${INSTALL_DIR}."
+  mkdir -p "${INSTALL_DIR}"
+  for stub in "9router" "9Router"; do
+    cat > "${INSTALL_DIR}/${stub}" <<'EOF'
+#!/usr/bin/env bash
+echo "9Router is not installed."
+echo "Download and install the official 9Router application, then re-run this installer or open a new shell."
+echo "For now, this helper is a placeholder and will remind you to install 9Router."
+EOF
+    chmod +x "${INSTALL_DIR}/${stub}"
+  done
+  echo "Placeholder 9Router helper installed as 9router/9Router in ${INSTALL_DIR}."
+  echo "Install the real 9Router app and add it to your PATH for full functionality."
+fi
+
+echo
 echo "Next steps:" 
 echo "  ${WRAPPER_NAME} --setup"
 echo "  ${WRAPPER_NAME} --run"

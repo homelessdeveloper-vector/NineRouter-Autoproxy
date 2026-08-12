@@ -120,6 +120,67 @@ All installers perform the same setup steps:
 - copy the proxy script into the install directory
 - create a launcher command such as `9router-proxy` or `nineRouter-autoproxy`
 
+### Enabling the launcher command in new terminal windows
+
+After installation, the launcher command is installed to `~/.local/bin` (macOS/Linux) or `AppData/Local/NineRouterAutoproxy` (Windows).
+
+**For macOS/Linux with zsh or bash:**
+
+Add this line to your shell profile (`~/.zshrc` for zsh, `~/.bashrc` or `~/.bash_profile` for bash):
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+Then reload your profile:
+
+```bash
+source ~/.zshrc  # or source ~/.bashrc / ~/.bash_profile
+```
+
+Or simply open a new terminal window.
+
+**For Windows:**
+
+The installer should add the directory to your PATH automatically. If not, add `%APPDATA%\Local\NineRouterAutoproxy` to your system PATH and restart your terminal.
+
+If you're not in a new shell session yet, you can use the full path directly:
+
+**macOS/Linux:**
+```bash
+~/.local/bin/9router-proxy --setup
+# or
+~/.local/bin/nineRouter-autoproxy --setup
+```
+
+**Windows:**
+```cmd
+%APPDATA%\Local\NineRouterAutoproxy\9router-proxy.cmd --setup
+```
+
+### All commands work from anywhere
+
+Once the launcher is installed, all commands work from any directory:
+
+```bash
+nine-router-autoproxy --setup    # Setup wizard
+nine-router-autoproxy --run      # Run proxy
+nine-router-autoproxy --diag     # Run diagnostics
+nine-router-autoproxy --menu     # Interactive menu
+```
+
+The launcher uses absolute paths, so it works consistently regardless of your current working directory.
+
+### Reinstalling updates to the latest version
+
+If you reinstall using the same installer script, it will automatically overwrite the old version:
+
+```bash
+python3 install.py
+```
+
+This ensures you're always running the latest version from the repository.
+
 If you are not already in the project folder:
 
 ```bash
