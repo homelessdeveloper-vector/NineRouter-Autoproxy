@@ -233,6 +233,7 @@ class Config:
         self.default_config = {
             "port": 8080,
             "rotation_interval": 60,
+            "proxy_batch_size": 10,
             "max_workers": 10,
             "test_timeout": 2.0,
             "api_url": "https://api.proxyscrape.com/v2/?request=get&protocol=http&timeout=5000&ssl=yes&anonymity=all&country=all&simplified=true&sort=last_checked",
@@ -242,6 +243,7 @@ class Config:
                 "http://icanhazip.com"
             ],
             "failed_proxy_memory": 20,
+            "never_repeat_proxy": True,
             "version": "1.0"
         }
     
@@ -394,6 +396,45 @@ class SystemChecker:
             return False, ErrorCode.format_error("E999", context=f"route:{url}", error=str(exc))
 
 
+class ClipboardHelper:
+    """Copy a value to the system clipboard when supported."""
+
+    @staticmethod
+    def copy_text(value: str) -> Tuple[bool, str]:
+        """Attempt to copy the supplied value to the OS clipboard."""
+        if not value:
+            return False, "Empty value provided for clipboard copy"
+
+        value = str(value).strip()
+        os_name = platform.system().lower()
+
+        try:
+            if os_name == 'darwin':
+                result = subprocess.run(['pbcopy'], input=value, text=True, capture_output=True, check=False)
+                if result.returncode == 0:
+                    return True, "Copied to clipboard"
+                return False, "pbcopy failed"
+
+            if os_name == 'linux':
+                for cmd in (['xclip', '-selection', 'clipboard'], ['xsel', '--clipboard', '--input'], ['wl-copy']):
+                    if shutil.which(cmd[0]):
+                        result = subprocess.run(cmd, input=value, text=True, capture_output=True, check=False)
+                        if result.returncode == 0:
+                            return True, "Copied to clipboard"
+                        return False, f"Clipboard command failed: {' '.join(cmd)}"
+                return False, "No Linux clipboard utility found (install xclip, xsel, or wl-clipboard)"
+
+            if os_name == 'windows':
+                result = subprocess.run(['powershell', '-NoProfile', '-Command', 'Set-Clipboard -Value @"' + value + '"@'], capture_output=True, text=True, check=False)
+                if result.returncode == 0:
+                    return True, "Copied to clipboard"
+                return False, "PowerShell clipboard command failed"
+
+            return False, f"Clipboard copy is not supported on {platform.system()}"
+        except Exception as exc:
+            return False, str(exc)
+
+
 class UI:
     """Terminal User Interface"""
     
@@ -521,7 +562,7 @@ class UI:
 
 
 # Mitmproxy addon code (embedded)
-ADDON_CODE = '''import concurrent.futures
+ADDON_TEMPLATE = '''import concurrent.futures
 import requests
 import threading
 import time
@@ -529,14 +570,130 @@ import sys
 from collections import deque
 from mitmproxy import ctx
 
+
+class Colors:
+    RED = ""
+    BOLD = ""
+    YELLOW = ""
+    CYAN = ""
+    END = ""
+
+
+class ErrorCode:
+    """Runtime-safe error diagnostics for the generated addon."""
+
+    ERRORS = {
+        "E011": {
+            "title": "SSL Certificate Verification Failed",
+            "message": "The remote endpoint could not be verified with the local certificate store",
+            "check": "URL: {url} | Status: {status}",
+            "action": "Check the system date, trust store, and whether a custom proxy is intercepting HTTPS traffic",
+        },
+        "E012": {
+            "title": "Request Timeout",
+            "message": "The upstream API or route did not respond in time",
+            "check": "Endpoint: {url} | Timeout: {timeout}s",
+            "action": "Retry later, check your network quality, or reduce the timeout for the current environment",
+        },
+        "E013": {
+            "title": "Network Unreachable",
+            "message": "Unable to access the network or remote host",
+            "check": "Host: {host} | Error: {error}",
+            "action": "Verify the internet connection, firewall, VPN, or captive portal and retry",
+        },
+        "E014": {
+            "title": "Route Not Found",
+            "message": "The requested API route does not exist or is no longer available",
+            "check": "Route: {route} | Response: {status}",
+            "action": "Confirm the API URL and update the upstream route if the service changed",
+        },
+        "E015": {
+            "title": "Rate Limited or Forbidden",
+            "message": "The service rejected the request before the proxy could rotate",
+            "check": "Route: {route} | Status: {status}",
+            "action": "Wait a bit, lower request frequency, or switch to an alternate proxy source",
+        },
+        "E016": {
+            "title": "Invalid Endpoint Configuration",
+            "message": "The endpoint URL is malformed or unsupported",
+            "check": "URL: {url}",
+            "action": "Validate the URL format and ensure it begins with http:// or https://",
+        },
+        "E018": {
+            "title": "Upstream Proxy Route Unreachable",
+            "message": "The selected proxy or route is blocked or refusing requests",
+            "check": "Proxy: {proxy} | Target: {target}",
+            "action": "Remove the broken proxy from the active list and retry with a fresh batch",
+        },
+        "E999": {
+            "title": "Unexpected Error",
+            "message": "An unknown runtime error occurred while checking connectivity",
+            "check": "Context: {context} | Error: {error}",
+            "action": "Capture the logs and re-run the diagnostics command to isolate the issue",
+        },
+    }
+
+    @staticmethod
+    def _safe_format(template: str, **kwargs) -> str:
+        if not template:
+            return ""
+        try:
+            return template.format(**kwargs)
+        except KeyError:
+            return template
+
+    @staticmethod
+    def format_error(code: str, **kwargs) -> str:
+        if code not in ErrorCode.ERRORS:
+            return f"Unknown error: {code}"
+
+        err = ErrorCode.ERRORS[code]
+        msg = f"[E{code[-3:]}] {err['title']}\n"
+        msg += f"{err['message']}\n\n"
+
+        if 'check' in err:
+            msg += f"Check: {ErrorCode._safe_format(err['check'], **kwargs)}\n"
+        if 'action' in err:
+            msg += f"Action: {ErrorCode._safe_format(err['action'], **kwargs)}\n"
+
+        return msg
+
+    @staticmethod
+    def classify_http_exception(exc):
+        if isinstance(exc, requests.exceptions.SSLError):
+            return "E011"
+        if isinstance(exc, requests.exceptions.Timeout):
+            return "E012"
+        if isinstance(exc, requests.exceptions.ConnectionError):
+            return "E013"
+        if isinstance(exc, requests.exceptions.HTTPError):
+            status = getattr(exc.response, 'status_code', 'unknown')
+            if status == 404:
+                return "E014"
+            if status in (403, 429):
+                return "E015"
+            return "E015"
+        if isinstance(exc, requests.exceptions.InvalidURL):
+            return "E016"
+        if isinstance(exc, requests.exceptions.InvalidSchema):
+            return "E016"
+        if isinstance(exc, requests.exceptions.TooManyRedirects):
+            return "E018"
+        return "E999"
+
+
 class NineRouterPreTester:
     def __init__(self):
         self.raw_proxies = []
         self.current_proxy = None
         self.previous_proxy = None
-        self.failed_proxies = deque(maxlen=20)
+        self.failed_proxy_memory = __FAILED_PROXY_MEMORY__
+        self.failed_proxies = deque(maxlen=self.failed_proxy_memory)
         self.proxy_scores = {}
-        self.rotation_interval = 60
+        self.rotation_interval = __ROTATION_INTERVAL__
+        self.batch_size = __PROXY_BATCH_SIZE__
+        self.max_workers = __MAX_WORKERS__
+        self.never_repeat_proxy = __NEVER_REPEAT_PROXY__
         self.lock = threading.Lock()
         self.rotation_timer = None
         
@@ -556,6 +713,7 @@ class NineRouterPreTester:
         else:
             os_name = system
         
+        repeat_text = "Never same proxy twice in a row" if self.never_repeat_proxy else "Proxy may repeat before refresh"
         announcement = f"""
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║                   🚀 NineRouter Autoproxy Rotator                        ║
@@ -569,17 +727,17 @@ class NineRouterPreTester:
 ║     HTTP Proxy: 127.0.0.1:8080                                          ║
 ║     Or: localhost:8080                                                  ║
 ║                                                                          ║
-║  🔄 Rotation: Every 60 seconds (auto)                                   ║
-║  Strategy: Fetch 10 ACTIVE proxies → Test in parallel → Pick fastest   ║
-║  Fallback: Memory of 20 dead proxies (skip retesting)                  ║
-║  Guarantee: Never same proxy twice in a row                             ║
+║  🔄 Rotation: Every {self.rotation_interval} seconds (auto)             ║
+║  Strategy: Fetch {self.batch_size} ACTIVE proxies → Test in parallel → Pick fastest   ║
+║  Fallback: Memory of {self.failed_proxy_memory} dead proxies (skip retesting)   ║
+║  Guarantee: {repeat_text:<56}║
 ║                                                                          ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 """
         ctx.log.info(announcement)
 
     def schedule_rotation(self):
-        """Schedule the next proxy rotation in 60 seconds."""
+        """Schedule the next proxy rotation."""
         self.rotation_timer = threading.Timer(
             self.rotation_interval,
             self._rotate_proxy_scheduled
@@ -591,14 +749,14 @@ class NineRouterPreTester:
     def _rotate_proxy_scheduled(self):
         """Called by the timer to rotate proxy."""
         with self.lock:
-            ctx.log.info("🔄 [Auto-Rotate] 60 seconds elapsed. Forcing proxy rotation...")
+            ctx.log.info("🔄 [Auto-Rotate] Timer elapsed. Forcing proxy rotation...")
             self.current_proxy = None
         self.schedule_rotation()
 
     def refresh_batch(self):
-        """Fetches a fresh batch of 10 ACTIVE HTTP proxies from ProxyScrape."""
-        ctx.log.info("📡 [Rotator] Fetching 10 fresh ACTIVE HTTP proxies from ProxyScrape...")
-        
+        """Fetches a fresh batch of ACTIVE HTTP proxies from ProxyScrape."""
+        ctx.log.info(f"📡 [Rotator] Fetching {self.batch_size} fresh ACTIVE HTTP proxies from ProxyScrape...")
+
         url = (
             "https://api.proxyscrape.com/v2/"
             "?request=get"
@@ -610,11 +768,11 @@ class NineRouterPreTester:
             "&simplified=true"
             "&sort=last_checked"
         )
-        
+
         try:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
-            
+
             raw_list = response.text.strip().split("\\r\\n")
             self.raw_proxies = []
             for p in raw_list:
@@ -622,18 +780,32 @@ class NineRouterPreTester:
                 if ":" in p and self._is_valid_proxy(p):
                     if p not in self.failed_proxies:
                         self.raw_proxies.append(p)
-            
-            self.raw_proxies = list(dict.fromkeys(self.raw_proxies))[:10]
+
+            self.raw_proxies = list(dict.fromkeys(self.raw_proxies))[:self.batch_size]
             ctx.log.info(f"📥 [Rotator] Loaded {len(self.raw_proxies)} validated HTTP proxies")
-            
-        except requests.exceptions.Timeout:
-            ctx.log.error("❌ [Rotator] ProxyScrape API timeout (10s). Retrying next cycle...")
+
+        except requests.exceptions.SSLError as exc:
+            ctx.log.error(ErrorCode.format_error("E011", url=url, status="certificate verification failed"))
             self.raw_proxies = []
-        except requests.exceptions.HTTPError as e:
-            ctx.log.error(f"❌ [Rotator] ProxyScrape API error {e.response.status_code}. Rate limited?")
+        except requests.exceptions.Timeout as exc:
+            ctx.log.error(ErrorCode.format_error("E012", url=url, timeout=10))
             self.raw_proxies = []
-        except Exception as e:
-            ctx.log.error(f"❌ [Rotator] Failed to fetch proxy batch: {e}")
+        except requests.exceptions.ConnectionError as exc:
+            ctx.log.error(ErrorCode.format_error("E013", host="api.proxyscrape.com", error=str(exc)))
+            self.raw_proxies = []
+        except requests.exceptions.HTTPError as exc:
+            status = getattr(exc.response, 'status_code', 'unknown')
+            code = ErrorCode.classify_http_exception(exc)
+            ctx.log.error(ErrorCode.format_error(code, route=url, status=status, url=url))
+            self.raw_proxies = []
+        except requests.exceptions.InvalidURL as exc:
+            ctx.log.error(ErrorCode.format_error("E016", url=url))
+            self.raw_proxies = []
+        except requests.exceptions.RequestException as exc:
+            ctx.log.error(ErrorCode.format_error("E999", context="proxy fetch", error=str(exc)))
+            self.raw_proxies = []
+        except Exception as exc:
+            ctx.log.error(ErrorCode.format_error("E999", context="proxy fetch", error=str(exc)))
             self.raw_proxies = []
 
     def _is_valid_proxy(self, proxy_str):
@@ -697,7 +869,7 @@ class NineRouterPreTester:
 
         ctx.log.info(f"⚡ [Testing] Concurrent testing of {len(self.raw_proxies)} proxies...")
         
-        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             results = executor.map(self.check_single_proxy, self.raw_proxies)
         
         working_proxies = [p for p in results if p is not None]
@@ -706,10 +878,13 @@ class NineRouterPreTester:
             working_proxies.sort(key=lambda x: x[1])
             
             selected = None
-            for proxy, speed in working_proxies:
-                if proxy != self.previous_proxy:
-                    selected = proxy
-                    break
+            if self.never_repeat_proxy:
+                for proxy, speed in working_proxies:
+                    if proxy != self.previous_proxy:
+                        selected = proxy
+                        break
+            else:
+                selected = working_proxies[0][0]
             
             if not selected:
                 selected = working_proxies[0][0]
@@ -783,6 +958,25 @@ addons = [NineRouterPreTester()]
 '''
 
 
+def build_addon_code(config: Dict) -> str:
+    """Render the addon code from configured values."""
+    rotation_interval = max(5, int(config.get("rotation_interval", 60)))
+    batch_size = max(1, int(config.get("proxy_batch_size", 10)))
+    max_workers = max(1, int(config.get("max_workers", 10)))
+    failed_memory = max(1, int(config.get("failed_proxy_memory", 20)))
+    never_repeat = bool(config.get("never_repeat_proxy", True))
+
+    return ADDON_TEMPLATE \
+        .replace("__ROTATION_INTERVAL__", str(rotation_interval)) \
+        .replace("__PROXY_BATCH_SIZE__", str(batch_size)) \
+        .replace("__MAX_WORKERS__", str(max_workers)) \
+        .replace("__FAILED_PROXY_MEMORY__", str(failed_memory)) \
+        .replace("__NEVER_REPEAT_PROXY__", str(never_repeat))
+
+
+ADDON_CODE = build_addon_code(Config().default_config)
+
+
 class SetupWizard:
     """Interactive setup wizard"""
     
@@ -841,27 +1035,97 @@ class SetupWizard:
                         break
             except ValueError:
                 self.ui.error("Invalid port number")
+
+        self.ui.section("3️⃣  Rotation Settings")
+        config = self.config.load()
+
+        rotation_interval = int(self.ui.prompt_text("Rotation interval in seconds", default=str(config.get("rotation_interval", 60))))
+        batch_size = int(self.ui.prompt_text("Active proxy batch size", default=str(config.get("proxy_batch_size", 10))))
+        worker_count = int(self.ui.prompt_text("Concurrent test workers", default=str(config.get("max_workers", 10))))
+        failed_memory = int(self.ui.prompt_text("Dead proxy memory", default=str(config.get("failed_proxy_memory", 20))))
+        never_repeat = self.ui.prompt_confirm("Never use the same proxy twice in a row?", default=config.get("never_repeat_proxy", True))
+
+        config["rotation_interval"] = max(5, rotation_interval)
+        config["proxy_batch_size"] = max(1, batch_size)
+        config["max_workers"] = max(1, worker_count)
+        config["failed_proxy_memory"] = max(1, failed_memory)
+        config["never_repeat_proxy"] = bool(never_repeat)
+        self.config.save(config)
+
+        addon_code = ADDON_TEMPLATE \
+            .replace("__ROTATION_INTERVAL__", str(config["rotation_interval"])) \
+            .replace("__PROXY_BATCH_SIZE__", str(config["proxy_batch_size"])) \
+            .replace("__MAX_WORKERS__", str(config["max_workers"])) \
+            .replace("__FAILED_PROXY_MEMORY__", str(config["failed_proxy_memory"])) \
+            .replace("__NEVER_REPEAT_PROXY__", str(bool(config["never_repeat_proxy"])))
         
         # Create addon
-        self.ui.section("3️⃣  Installing Addon")
+        self.ui.section("4️⃣  Installing Addon")
         try:
             self.config.addon_dir.mkdir(parents=True, exist_ok=True)
             with open(self.config.addon_file, 'w') as f:
-                f.write(ADDON_CODE)
+                f.write(addon_code)
             os.chmod(self.config.addon_file, 0o755)
             self.ui.success(f"Addon installed to {self.config.addon_file}")
         except Exception as e:
             self.ui.error(f"Failed to install addon: {e}")
             return False
+
+        proxy_url = f"http://127.0.0.1:{self.config.get('port', 8080)}"
+        copied, result = ClipboardHelper.copy_text(proxy_url)
+        if copied:
+            self.ui.success(f"Proxy URL copied to clipboard: {proxy_url}")
+        else:
+            self.ui.warning(f"Clipboard unavailable: {result}. You can still paste: {proxy_url}")
         
         # Verify
-        self.ui.section("4️⃣  Verification")
+        self.ui.section("5️⃣  Verification")
         ok, msg = SystemChecker.check_port(self.config.get("port", 8080))
         print(f"  {msg}")
         
         self.ui.success("Setup complete!")
         
         return True
+
+
+class AdvancedSettings:
+    """Edit rotation, proxy, and retry behavior without editing code."""
+
+    def __init__(self, ui: UI, config: Config):
+        self.ui = ui
+        self.config = config
+
+    def run(self) -> None:
+        self.ui.header("⚙️ Advanced Settings")
+        settings = self.config.load()
+
+        edited = False
+        prompts = {
+            "rotation_interval": ("Rotation interval in seconds", int, lambda v: max(5, v)),
+            "proxy_batch_size": ("Active proxy batch size", int, lambda v: max(1, v)),
+            "max_workers": ("Concurrent test workers", int, lambda v: max(1, v)),
+            "failed_proxy_memory": ("Dead proxy memory", int, lambda v: max(1, v)),
+            "never_repeat_proxy": ("Never repeat the same proxy twice?", bool, lambda v: bool(v)),
+        }
+
+        for key, (label, cast, clean) in prompts.items():
+            current = settings.get(key, self.config.default_config.get(key))
+            default = str(current)
+            value = self.ui.prompt_text(f"{label} [{default}]", default=default)
+            try:
+                parsed = cast(value)
+                settings[key] = clean(parsed)
+                edited = True
+            except ValueError:
+                self.ui.warning(f"Invalid value for {label}; keeping current setting: {current}")
+
+        if edited:
+            self.config.save(settings)
+            self.ui.success("Advanced settings saved.")
+        else:
+            self.ui.info("No changes made.")
+
+        self.ui.info("Changes apply on the next setup/run.")
 
 
 class ProxyRunner:
@@ -883,6 +1147,13 @@ class ProxyRunner:
             return
         
         self.ui.header("🚀 Starting NineRouter Autoproxy")
+
+        proxy_url = f"http://127.0.0.1:{port}"
+        copied, result = ClipboardHelper.copy_text(proxy_url)
+        if copied:
+            self.ui.success(f"Proxy URL copied to clipboard: {proxy_url}")
+        else:
+            self.ui.warning(f"Clipboard unavailable: {result}. Manual value: {proxy_url}")
         
         self.ui.status_box("Configuration", {
             "Port": str(port),
@@ -991,18 +1262,19 @@ class MainMenu:
         """Show main menu"""
         while True:
             self.ui.header("🚀 NineRouter Autoproxy - Main Menu")
-            
+
             choice = self.ui.menu(
                 "What would you like to do?",
                 {
                     "S": "Setup (install & configure)",
                     "R": "Run proxy server",
                     "D": "Run diagnostics",
+                    "A": "Advanced settings",
                     "H": "Help & documentation",
                     "Q": "Quit"
                 }
             )
-            
+
             if choice == "S":
                 wizard = SetupWizard(self.ui, self.config)
                 wizard.run()
@@ -1012,6 +1284,9 @@ class MainMenu:
             elif choice == "D":
                 diag = Diagnostics(self.ui, self.config)
                 diag.run()
+            elif choice == "A":
+                settings = AdvancedSettings(self.ui, self.config)
+                settings.run()
             elif choice == "H":
                 self._show_help()
             elif choice == "Q":

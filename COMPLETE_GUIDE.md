@@ -146,6 +146,17 @@ Config file is missing or unreadable
 
 **Fix:** Run setup wizard first
 
+#### E011 - SSL Certificate Verification Failed
+```
+❌ [E011] SSL Certificate Verification Failed
+The remote endpoint could not be verified with the local certificate store
+
+🔍 Check: URL: https://api.proxyscrape.com/v2/ | Status: certificate verification failed
+💡 Action: Check the system date, trust store, and whether a custom proxy is intercepting HTTPS traffic
+```
+
+**Fix:** Check your local trust store, system date, VPN, firewall, or certificate intercepting proxy. The generated addon now logs this cleanly instead of crashing with a `NameError`.
+
 #### E005 - ProxyScrape API Unreachable
 ```
 ❌ [E005] ProxyScrape API Unreachable
@@ -249,6 +260,8 @@ Example output:
   Config dir: ~/.nine_router - ✅ Exists
   Addon file: ~/.mitmproxy/nine_router_autoproxy.py - ✅ Exists
 ```
+
+The generated addon also includes a built-in `ErrorCode` helper, so self-signed certificate issues produce a clean E-code log instead of a runtime traceback during startup.
 
 ### H - Help & Documentation
 ```

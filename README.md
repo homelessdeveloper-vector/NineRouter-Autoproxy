@@ -9,6 +9,9 @@ A lightweight rotating HTTP proxy helper for 9Router and other tools that need a
 - Avoids reusing the same proxy consecutively
 - Tracks dead proxies in memory to skip repeated retries
 - Includes diagnostics for missing dependencies, missing routes, SSL issues, timeouts, network outages, and more
+- Generates a mitmproxy addon with embedded runtime diagnostics so startup does not crash on certificate failures
+- Automatically copies the local proxy URL to the clipboard when available
+- Supports configurable rotation and dead-proxy memory settings without editing code
 - Provides setup and startup commands without requiring a package manager or framework
 
 ## Requirements
@@ -95,6 +98,22 @@ Each error includes:
 - a human-friendly summary
 - a check description
 - an action to fix or retry
+
+### Common SSL certificate failure
+
+If the upstream ProxyScrape API fails with a certificate verification error like `CERTIFICATE_VERIFY_FAILED`, the generated addon will now log a proper E-code instead of crashing with a `NameError`.
+
+Example diagnosis:
+
+```text
+❌ [E011] SSL Certificate Verification Failed
+The remote endpoint could not be verified with the local certificate store
+
+🔍 Check: URL: https://api.proxyscrape.com/v2/ | Status: certificate verification failed
+💡 Action: Check the system date, trust store, and whether a custom proxy is intercepting HTTPS traffic
+```
+
+This usually means a local trust-store, VPN, firewall, or MITM certificate is intercepting HTTPS traffic.
 
 ## Running with 9Router
 
