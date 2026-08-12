@@ -32,7 +32,7 @@ chmod +x install.sh
 If you are not already in the project folder, first clone the repo and `cd` into it:
 
 ```bash
-git clone https://github.com/noreplystandardprints-sketch/NineRouter-Autoproxy.git
+git clone https://github.com/homelessdeveloper-vector/NineRouter-Autoproxy.git
 cd NineRouter-Autoproxy
 chmod +x install.sh
 ./install.sh
