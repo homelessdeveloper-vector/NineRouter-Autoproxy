@@ -6,6 +6,8 @@ A resilient rotating HTTP proxy helper for 9Router and other AI/dev tooling that
 
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![mitmproxy](https://img.shields.io/badge/Proxy-mitmproxy-2E7D32?logo=mitmproxy&logoColor=white)](https://mitmproxy.org/) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-5B7CFF)](#)
 
+[🚀 Quick Start](#quick-start) • [💡 Features](#key-features) • [📖 Setup](#installation) • [🔧 Configuration](#configuration)
+
 ## Why this project?
 
 If your workflow depends on AI coding tools, proxy routing, or upstream proxy health, one dead endpoint can break an entire session. NineRouter Autoproxy keeps your connection resilient by rotating through healthy proxies, skipping dead candidates, and exposing clear diagnostics when upstream services fail.
