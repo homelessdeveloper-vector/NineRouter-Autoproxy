@@ -1089,6 +1089,78 @@ class SetupWizard:
         
         return True
 
+    def auto_run(self) -> bool:
+        """Automatic setup with all defaults - no prompts"""
+        print("🚀 Auto-configuring NineRouter Autoproxy...")
+        
+        # System checks
+        checks = [
+            ("Python Version", SystemChecker.check_python()),
+            ("Operating System", SystemChecker.check_os()),
+            ("mitmproxy Installation", SystemChecker.check_mitmproxy()),
+        ]
+        
+        all_ok = True
+        for name, (ok, msg) in checks:
+            print(f"  {msg}")
+            if not ok:
+                all_ok = False
+        
+        if not all_ok:
+            print("❌ Some prerequisites are missing. Please install them first.")
+            return False
+        
+        # Use defaults
+        default_port = 8080
+        ok, msg = SystemChecker.check_port(default_port)
+        print(f"  Port {default_port}: {msg}")
+        
+        if not ok:
+            print(f"❌ Port {default_port} is not available")
+            return False
+        
+        self.config.set("port", default_port)
+        
+        # Set default rotation settings
+        config = {
+            "port": default_port,
+            "rotation_interval": 60,
+            "proxy_batch_size": 10,
+            "max_workers": 10,
+            "failed_proxy_memory": 20,
+            "never_repeat_proxy": True,
+        }
+        self.config.save(config)
+        
+        addon_code = ADDON_TEMPLATE \
+            .replace("__ROTATION_INTERVAL__", str(config["rotation_interval"])) \
+            .replace("__PROXY_BATCH_SIZE__", str(config["proxy_batch_size"])) \
+            .replace("__MAX_WORKERS__", str(config["max_workers"])) \
+            .replace("__FAILED_PROXY_MEMORY__", str(config["failed_proxy_memory"])) \
+            .replace("__NEVER_REPEAT_PROXY__", str(bool(config["never_repeat_proxy"])))
+        
+        # Create addon
+        try:
+            self.config.addon_dir.mkdir(parents=True, exist_ok=True)
+            with open(self.config.addon_file, 'w') as f:
+                f.write(addon_code)
+            os.chmod(self.config.addon_file, 0o755)
+            print(f"✅ Addon installed to {self.config.addon_file}")
+        except Exception as e:
+            print(f"❌ Failed to install addon: {e}")
+            return False
+        
+        proxy_url = f"http://127.0.0.1:{default_port}"
+        copied, result = ClipboardHelper.copy_text(proxy_url)
+        if copied:
+            print(f"✅ Proxy URL copied to clipboard: {proxy_url}")
+        else:
+            print(f"✅ Proxy URL (copy this): {proxy_url}")
+        
+        print("✅ Auto-setup complete! Run 'nine-router-autoproxy --run' to start.")
+        
+        return True
+
 
 class AdvancedSettings:
     """Edit rotation, proxy, and retry behavior without editing code."""
@@ -1357,6 +1429,8 @@ def main():
         arg = sys.argv[1].lower()
         if arg == "--setup":
             SetupWizard(ui, config).run()
+        elif arg == "--auto-setup":
+            SetupWizard(ui, config).auto_run()
         elif arg == "--run":
             ProxyRunner(ui, config).run()
         elif arg == "--diag":
@@ -1364,14 +1438,24 @@ def main():
         elif arg in ("--menu", "-m"):
             MainMenu().show()
         elif arg in ("-h", "--help", "help"):
-            print("Usage: python3 nine_router_proxy.py [--setup|--run|--diag|--menu|--help]")
-            print("Without arguments, starts the proxy directly.")
+            print("Usage: nine_router_proxy.py [--auto-setup|--setup|--run|--diag|--menu|--help]")
+            print("  --auto-setup    Auto-configure with defaults (recommended)")
+            print("  --setup         Interactive setup wizard")
+            print("  --run           Run proxy directly")
+            print("  --diag          Run diagnostics")
+            print("  --menu, -m      Show interactive menu")
         else:
             print(f"Unknown option: {sys.argv[1]}")
-            print("Usage: python3 nine_router_proxy.py [--setup|--run|--diag|--menu|--help]")
+            print("Usage: nine_router_proxy.py [--auto-setup|--setup|--run|--diag|--menu|--help]")
             sys.exit(1)
     else:
-        MainMenu().show()
+        # If no config exists, auto-setup. Otherwise show menu.
+        config_path = config.config_dir / "config.json"
+        if not config_path.exists():
+            print("No configuration found. Running auto-setup...")
+            SetupWizard(ui, config).auto_run()
+        else:
+            MainMenu().show()
 
 
 if __name__ == "__main__":
