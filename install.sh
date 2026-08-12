@@ -3,9 +3,13 @@ set -euo pipefail
 
 SCRIPT_NAME="nine_router_proxy.py"
 INSTALL_DIR="${HOME}/.local/bin"
-WRAPPER_NAME="nine-router-autoproxy"
 SRC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 SRC_SCRIPT="${SRC_DIR}/${SCRIPT_NAME}"
+
+WRAPPER_NAME="9router-proxy"
+if command -v "${WRAPPER_NAME}" >/dev/null 2>&1; then
+  WRAPPER_NAME="nineRouter-autoproxy"
+fi
 
 function fail() {
   echo "Error: $1" >&2

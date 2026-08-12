@@ -45,7 +45,7 @@ All installers (`install.sh`, `install.py`, and `install.bat`) perform the same 
 
 - install runtime dependencies
 - copy `nine_router_proxy.py` to the install directory
-- create the launcher command `nine-router-autoproxy`
+- create the launcher command `9router-proxy` or `nineRouter-autoproxy` if `9router-proxy` is already taken
 
 If you are not already in the project folder, first clone the repo and `cd` into it:
 
@@ -61,7 +61,7 @@ What the installer does:
 - Detects an existing Python 3.9+ interpreter
 - Installs Python dependencies: `requests`, `mitmproxy`, and `rich`
 - Copies `nine_router_proxy.py` to `~/.local/bin` on macOS/Linux or `%LOCALAPPDATA%\NineRouterAutoproxy` on Windows
-- Creates a launcher command named `nine-router-autoproxy` (`nine-router-autoproxy.cmd` on Windows)
+- Creates a launcher command named `9router-proxy` or `nineRouter-autoproxy` (`nineRouter-autoproxy.cmd` on Windows)
 - Prints the next commands to run after installation
 
 Files in this repository:
@@ -70,7 +70,7 @@ Files in this repository:
 - `install.py`: Cross-platform Python installer for Windows, macOS, and Linux
 - `install.bat`: Windows batch installer wrapper for `install.py`
 - `nine_router_proxy.py`: Core proxy script with setup, diagnostics, and runtime logic
-- `nine-router-autoproxy`: Installed launcher command for easy usage
+- `9router-proxy` or `nineRouter-autoproxy`: Installed launcher command for easy usage
 
 What the installer does not do:
 
@@ -93,29 +93,31 @@ python3 -m pip install mitmproxy
 ## Quick start
 
 ```bash
-nine-router-autoproxy
+9router-proxy
 ```
 
 This opens the interactive menu. To run the proxy directly, use:
 
 ```bash
-nine-router-autoproxy --run
+9router-proxy --run
 ```
 
 To start setup directly:
 
 ```bash
-nine-router-autoproxy --setup
+9router-proxy --setup
 ```
 
 To open the menu explicitly:
 
 ```bash
-nine-router-autoproxy --menu
+9router-proxy --menu
 ```
 
+If `9router-proxy` is already taken on your system, the installer will create `nineRouter-autoproxy` instead.
+
 ```bash
-nine-router-autoproxy --menu
+nineRouter-autoproxy --menu
 ```
 
 Or run the legacy script directly:

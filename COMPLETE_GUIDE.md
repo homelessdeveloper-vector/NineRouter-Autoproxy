@@ -34,7 +34,11 @@ On Windows, run:
 install.bat
 ```
 
-All installers perform the same steps and create the same launcher command.
+All installers perform the same steps:
+
+- install runtime dependencies
+- copy `nine_router_proxy.py` to the install directory
+- create the launcher command `9router-proxy` or fallback to `nineRouter-autoproxy`
 
 If you are not in the project folder yet, first clone the repo and `cd` into it:
 
@@ -45,7 +49,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-This installer installs dependencies, configures the script, and creates a launcher command named `nine-router-autoproxy`.
+This installer installs dependencies, configures the script, and creates a launcher command named `9router-proxy` or `nineRouter-autoproxy` if the first name is already taken.
 
 Repository files:
 
@@ -53,7 +57,7 @@ Repository files:
 - `install.py`: Cross-platform Python installer
 - `install.bat`: Windows wrapper installer
 - `nine_router_proxy.py`: Proxy runtime and setup script
-- `nine-router-autoproxy`: Installed command launcher
+- `9router-proxy` or `nineRouter-autoproxy`: Installed command launcher
 
 ### 2. Run Interactive Menu
 
@@ -110,32 +114,34 @@ In 9Router settings:
 
 ### Interactive Menu (Default)
 ```bash
-nine-router-autoproxy
+9router-proxy
 ```
 Opens menu to Setup / Run / Diagnose
 
 ### Setup Only
 ```bash
-nine-router-autoproxy --setup
+9router-proxy --setup
 ```
 Runs the setup wizard without menu
 
 ### Run Proxy Directly
 ```bash
-nine-router-autoproxy --run
+9router-proxy --run
 ```
 Starts proxy immediately (must run setup first)
 
 ### Diagnostics Only
 ```bash
-nine-router-autoproxy --diag
+9router-proxy --diag
 ```
 Runs full system checks and configuration dump
 
 ### If the launcher is not on PATH
 ```bash
-~/.local/bin/nine-router-autoproxy --setup
+~/.local/bin/9router-proxy --setup
 ```
+
+If `9router-proxy` is already taken, the installer may create `nineRouter-autoproxy` instead.
 
 ---
 

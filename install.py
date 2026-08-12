@@ -39,26 +39,34 @@ def install_dependencies(python_executable: Path) -> None:
         )
 
 
-def write_wrapper(install_dir: Path, python_executable: Path, script_path: Path) -> None:
+def choose_wrapper_name() -> str:
+    if shutil.which("9router-proxy") is not None:
+        return "nineRouter-autoproxy"
+    return "9router-proxy"
+
+
+def write_wrapper(install_dir: Path, python_executable: Path, script_path: Path) -> str:
     install_dir.mkdir(parents=True, exist_ok=True)
+    wrapper_name = choose_wrapper_name()
 
     if platform.system() == "Windows":
-        wrapper_path = install_dir / "nine-router-autoproxy.cmd"
+        wrapper_path = install_dir / f"{wrapper_name}.cmd"
         wrapper_content = (
             f"@echo off\n"
             f"\"{python_executable}\" \"{script_path}\" %*\n"
         )
-        wrapper_path.write_text(wrapper_content, encoding="utf-8")
-        print(f"Created launcher: {wrapper_path}")
     else:
-        wrapper_path = install_dir / "nine-router-autoproxy"
+        wrapper_path = install_dir / wrapper_name
         wrapper_content = (
             "#!/usr/bin/env bash\n"
             f"exec \"{python_executable}\" \"{script_path}\" \"$@\"\n"
         )
-        wrapper_path.write_text(wrapper_content, encoding="utf-8")
+
+    wrapper_path.write_text(wrapper_content, encoding="utf-8")
+    if platform.system() != "Windows":
         wrapper_path.chmod(0o755)
-        print(f"Created launcher: {wrapper_path}")
+    print(f"Created launcher: {wrapper_path}")
+    return wrapper_name
 
 
 def main() -> None:
@@ -79,14 +87,14 @@ def main() -> None:
     target_script.chmod(0o755)
     print(f"Copied {source_script.name} to {target_script}")
 
-    write_wrapper(install_dir, python_executable, target_script)
+    wrapper_name = write_wrapper(install_dir, python_executable, target_script)
 
     path_entries = os.environ.get("PATH", "").split(os.pathsep)
     in_path = str(install_dir) in path_entries
 
     print("\nInstallation complete.")
     if in_path:
-        print(f"{install_dir} is on your PATH. You can now run: nine-router-autoproxy")
+        print(f"{install_dir} is on your PATH. You can now run: {wrapper_name}")
     else:
         print(f"Add {install_dir} to your PATH to run the command from anywhere.")
         print("For example:")
@@ -97,15 +105,17 @@ def main() -> None:
         print("Then open a new shell.")
 
     if platform.system() == "Windows":
+        launcher_cmd = f"{wrapper_name}.cmd"
         print("\nRun the command:")
-        print("  nine-router-autoproxy.cmd --setup")
+        print(f"  {launcher_cmd} --setup")
         print("Or use the full path if PATH is not updated:")
-        print(f"  \"{install_dir / 'nine-router-autoproxy.cmd'}\" --setup")
+        print(f"  \"{install_dir / launcher_cmd}\" --setup")
     else:
+        launcher_cmd = wrapper_name
         print("\nRun the command:")
-        print("  nine-router-autoproxy --setup")
+        print(f"  {launcher_cmd} --setup")
         print("If PATH is not updated, run:")
-        print(f"  \"{install_dir / 'nine-router-autoproxy'}\" --setup")
+        print(f"  \"{install_dir / launcher_cmd}\" --setup")
 
 
 if __name__ == "__main__":
