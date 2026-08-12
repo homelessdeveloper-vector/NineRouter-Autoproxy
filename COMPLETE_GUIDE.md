@@ -77,27 +77,32 @@ In 9Router settings:
 
 ### Interactive Menu (Default)
 ```bash
-python3 nine_router_proxy.py
+nine-router-autoproxy
 ```
 Opens menu to Setup / Run / Diagnose
 
 ### Setup Only
 ```bash
-python3 nine_router_proxy.py --setup
+nine-router-autoproxy --setup
 ```
 Runs the setup wizard without menu
 
 ### Run Proxy Directly
 ```bash
-python3 nine_router_proxy.py --run
+nine-router-autoproxy --run
 ```
 Starts proxy immediately (must run setup first)
 
 ### Diagnostics Only
 ```bash
-python3 nine_router_proxy.py --diag
+nine-router-autoproxy --diag
 ```
 Runs full system checks and configuration dump
+
+### If the launcher is not on PATH
+```bash
+~/.local/bin/nine-router-autoproxy --setup
+```
 
 ---
 

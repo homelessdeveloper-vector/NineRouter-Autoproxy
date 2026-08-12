@@ -16,8 +16,8 @@ A lightweight rotating HTTP proxy helper for 9Router and other tools that need a
 
 ## Requirements
 
-- Python 3.9+
-- mitmproxy installed and available on your PATH
+- Python 3.9+ already installed
+- mitmproxy installed and available on your PATH (installer will install it if Python is present)
 - Network access to fetch proxy lists and test endpoints
 
 ### Install with installer script
@@ -27,7 +27,17 @@ chmod +x install.sh
 ./install.sh
 ```
 
-This installer installs required dependencies, copies `nine_router_proxy.py` to `~/.local/bin`, and creates a launcher command named `nine-router-autoproxy`.
+What `install.sh` does:
+
+- Detects an existing Python 3.9+ interpreter
+- Installs Python dependencies: `requests`, `mitmproxy`, and `rich`
+- Copies `nine_router_proxy.py` to `~/.local/bin`
+- Creates a launcher command named `nine-router-autoproxy`
+- Prints the next commands to run after installation
+
+What `install.sh` does not do:
+
+- It does not install Python itself. You must already have Python 3.9+ installed.
 
 ### Install mitmproxy
 
