@@ -45,13 +45,31 @@ Your support helps fund development, improve stability, and keep the project gro
 
 ## Quick Start
 
-### Install
-
-From the repository root:
+### Install (Option 1: Clone the repo)
 
 ```bash
 git clone https://github.com/homelessdeveloper-vector/NineRouter-Autoproxy.git
 cd NineRouter-Autoproxy
+python3 install.py
+```
+
+**Make sure you `cd` into the cloned directory before running `python3 install.py`**
+
+### Install (Option 2: Direct download and install)
+
+If you already cloned the repo or just want to reinstall:
+
+```bash
+cd ~/NineRouter-Autoproxy  # or wherever you cloned it
+python3 install.py
+```
+
+If the directory doesn't exist yet:
+
+```bash
+mkdir -p ~/NineRouter-Autoproxy
+cd ~/NineRouter-Autoproxy
+curl -O https://raw.githubusercontent.com/homelessdeveloper-vector/NineRouter-Autoproxy/main/install.py
 python3 install.py
 ```
 
