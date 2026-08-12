@@ -20,6 +20,15 @@ A lightweight rotating HTTP proxy helper for 9Router and other tools that need a
 - mitmproxy installed and available on your PATH
 - Network access to fetch proxy lists and test endpoints
 
+### Install with installer script
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+This installer installs required dependencies, copies `nine_router_proxy.py` to `~/.local/bin`, and creates a launcher command named `nine-router-autoproxy`.
+
 ### Install mitmproxy
 
 macOS:
@@ -37,8 +46,8 @@ python3 -m pip install mitmproxy
 ## Quick start
 
 ```bash
-python3 nine_router_proxy.py --setup
-python3 nine_router_proxy.py --run
+nine-router-autoproxy --setup
+nine-router-autoproxy --run
 ```
 
 Or use the interactive menu:

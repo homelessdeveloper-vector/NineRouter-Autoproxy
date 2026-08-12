@@ -701,6 +701,12 @@ class NineRouterPreTester:
         self.refresh_batch()
         self.schedule_rotation()
 
+    def _format_box(self, lines, width=74):
+        border_top = "╔" + "═" * width + "╗"
+        border_bottom = "╚" + "═" * width + "╝"
+        body = "\n".join(f"║{line.ljust(width)}║" for line in lines)
+        return f"{border_top}\n{body}\n{border_bottom}"
+
     def _announce_startup(self):
         """Announce localhost HTTP proxy details for 9router configuration."""
         system = sys.platform
@@ -714,26 +720,24 @@ class NineRouterPreTester:
             os_name = system
         
         repeat_text = "Never same proxy twice in a row" if self.never_repeat_proxy else "Proxy may repeat before refresh"
-        announcement = f"""
-╔══════════════════════════════════════════════════════════════════════════╗
-║                   🚀 NineRouter Autoproxy Rotator                        ║
-║                                                                          ║
-║  Status: ✅ ACTIVE & LISTENING                                          ║
-║  System: {os_name:<54}║
-║  Proxy Type: HTTP                                                        ║
-║  Listen Address: http://localhost:8080                                  ║
-║                                                                          ║
-║  📋 CONFIGURE 9ROUTER WITH:                                             ║
-║     HTTP Proxy: 127.0.0.1:8080                                          ║
-║     Or: localhost:8080                                                  ║
-║                                                                          ║
-║  🔄 Rotation: Every {self.rotation_interval} seconds (auto)             ║
-║  Strategy: Fetch {self.batch_size} ACTIVE proxies → Test in parallel → Pick fastest   ║
-║  Fallback: Memory of {self.failed_proxy_memory} dead proxies (skip retesting)   ║
-║  Guarantee: {repeat_text:<56}║
-║                                                                          ║
-╚══════════════════════════════════════════════════════════════════════════╝
-"""
+        announcement = self._format_box([
+            "                   🚀 NineRouter Autoproxy Rotator",
+            "",
+            "  Status: ✅ ACTIVE & LISTENING",
+            f"  System: {os_name}",
+            "  Proxy Type: HTTP",
+            "  Listen Address: http://localhost:8080",
+            "",
+            "  📋 CONFIGURE 9ROUTER WITH:",
+            "     HTTP Proxy: 127.0.0.1:8080",
+            "     Or: localhost:8080",
+            "",
+            f"  🔄 Rotation: Every {self.rotation_interval} seconds (auto)",
+            f"  Strategy: Fetch {self.batch_size} ACTIVE proxies → Test in parallel → Pick fastest",
+            f"  Fallback: Memory of {self.failed_proxy_memory} dead proxies (skip retesting)",
+            f"  Guarantee: {repeat_text}",
+            ""
+        ], width=74)
         ctx.log.info(announcement)
 
     def schedule_rotation(self):
@@ -943,15 +947,13 @@ class NineRouterPreTester:
         if self.rotation_timer:
             self.rotation_timer.cancel()
         
-        announcement = """
-╔══════════════════════════════════════════════════════════════════════════╗
-║                   🛑 Autoproxy Rotator Shutting Down                     ║
-║                                                                          ║
-║  Status: STOPPED                                                         ║
-║  Proxy: http://localhost:8080 (no longer available)                     ║
-║                                                                          ║
-╚══════════════════════════════════════════════════════════════════════════╝
-"""
+        announcement = self._format_box([
+            "                   🛑 Autoproxy Rotator Shutting Down",
+            "",
+            "  Status: STOPPED",
+            "  Proxy: http://localhost:8080 (no longer available)",
+            ""
+        ], width=74)
         ctx.log.info(announcement)
 
 addons = [NineRouterPreTester()]
@@ -1180,6 +1182,10 @@ class ProxyRunner:
                 text=True,
                 bufsize=1
             )
+
+            proxy_url = f"http://127.0.0.1:{port}"
+            self.ui.success(f"Proxy on {proxy_url}")
+            self.ui.info("Copy this URL into 9Router or your HTTP proxy settings.")
             
             # Stream output
             for line in self.process.stdout:

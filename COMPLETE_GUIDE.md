@@ -13,6 +13,15 @@ This is a **single Python file** that handles everything: setup, configuration, 
 chmod +x nine_router_proxy.py
 ```
 
+### 1.1 Run Installer Script
+
+```bash
+chmod +x install.sh
+./install.sh
+```
+
+This installer installs dependencies, configures the script, and creates a launcher command named `nine-router-autoproxy`.
+
 ### 2. Run Interactive Menu
 
 ```bash
