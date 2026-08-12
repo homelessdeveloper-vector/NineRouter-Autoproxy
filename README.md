@@ -22,11 +22,23 @@ A lightweight rotating HTTP proxy helper for 9Router and other tools that need a
 
 ### Install with installer script
 
-From the repository root directory:
+From the repository root directory on Linux/macOS:
 
 ```bash
 chmod +x install.sh
 ./install.sh
+```
+
+On any platform with Python installed (including Windows), you can use the cross-platform installer:
+
+```bash
+python3 install.py
+```
+
+On Windows, you can also run:
+
+```cmd
+install.bat
 ```
 
 If you are not already in the project folder, first clone the repo and `cd` into it:
@@ -38,15 +50,15 @@ chmod +x install.sh
 ./install.sh
 ```
 
-What `install.sh` does:
+What the installer does:
 
 - Detects an existing Python 3.9+ interpreter
 - Installs Python dependencies: `requests`, `mitmproxy`, and `rich`
-- Copies `nine_router_proxy.py` to `~/.local/bin`
-- Creates a launcher command named `nine-router-autoproxy`
+- Copies `nine_router_proxy.py` to `~/.local/bin` on macOS/Linux or `%LOCALAPPDATA%\NineRouterAutoproxy` on Windows
+- Creates a launcher command named `nine-router-autoproxy` (`nine-router-autoproxy.cmd` on Windows)
 - Prints the next commands to run after installation
 
-What `install.sh` does not do:
+What the installer does not do:
 
 - It does not install Python itself. You must already have Python 3.9+ installed.
 
@@ -67,14 +79,19 @@ python3 -m pip install mitmproxy
 ## Quick start
 
 ```bash
-nine-router-autoproxy --setup
-nine-router-autoproxy --run
+nine-router-autoproxy
 ```
 
-Or use the interactive menu:
+This starts the proxy immediately. Use `--menu` to open the interactive menu instead:
 
 ```bash
-python3 nine_router_proxy.py
+nine-router-autoproxy --menu
+```
+
+Or run the legacy script directly:
+
+```bash
+python3 nine_router_proxy.py --run
 ```
 
 ## Configuration

@@ -1351,27 +1351,27 @@ MORE INFO:
 
 def main():
     """Main entry point"""
+    ui = UI()
+    config = Config()
     if len(sys.argv) > 1:
-        if sys.argv[1] == "--setup":
-            ui = UI()
-            config = Config()
-            wizard = SetupWizard(ui, config)
-            wizard.run()
-        elif sys.argv[1] == "--run":
-            ui = UI()
-            config = Config()
-            runner = ProxyRunner(ui, config)
-            runner.run()
-        elif sys.argv[1] == "--diag":
-            ui = UI()
-            config = Config()
-            diag = Diagnostics(ui, config)
-            diag.run()
+        arg = sys.argv[1].lower()
+        if arg == "--setup":
+            SetupWizard(ui, config).run()
+        elif arg == "--run":
+            ProxyRunner(ui, config).run()
+        elif arg == "--diag":
+            Diagnostics(ui, config).run()
+        elif arg in ("--menu", "-m"):
+            MainMenu().show()
+        elif arg in ("-h", "--help", "help"):
+            print("Usage: python3 nine_router_proxy.py [--setup|--run|--diag|--menu|--help]")
+            print("Without arguments, starts the proxy directly.")
         else:
-            print("Usage: python3 nine_router_proxy.py [--setup|--run|--diag]")
+            print(f"Unknown option: {sys.argv[1]}")
+            print("Usage: python3 nine_router_proxy.py [--setup|--run|--diag|--menu|--help]")
+            sys.exit(1)
     else:
-        menu = MainMenu()
-        menu.show()
+        ProxyRunner(ui, config).run()
 
 
 if __name__ == "__main__":

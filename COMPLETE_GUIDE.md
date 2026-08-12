@@ -15,11 +15,23 @@ chmod +x nine_router_proxy.py
 
 ### 1.1 Run Installer Script
 
-Run this from the repository root directory:
+Run this from the repository root directory on Linux/macOS:
 
 ```bash
 chmod +x install.sh
 ./install.sh
+```
+
+On any platform with Python installed, you can also use the cross-platform installer:
+
+```bash
+python3 install.py
+```
+
+On Windows, run:
+
+```cmd
+install.bat
 ```
 
 If you are not in the project folder yet, first clone the repo and `cd` into it:

@@ -32,6 +32,17 @@ for candidate in python3 python; do
  done
 
 if [ -z "${PYTHON_CMD}" ]; then
+  echo "Could not find Python 3.9+. Falling back to install.py if available."
+  if command -v python3 >/dev/null 2>&1; then
+    PYTHON_CMD=python3
+  elif command -v python >/dev/null 2>&1; then
+    PYTHON_CMD=python
+  else
+    fail "Python 3.9+ is required. Install Python 3.9 or later and retry."
+  fi
+fi
+
+if [ -z "${PYTHON_CMD}" ]; then
   fail "Python 3.9+ is required. Install Python 3.9 or later and retry."
 fi
 
