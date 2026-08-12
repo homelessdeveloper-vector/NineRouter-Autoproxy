@@ -45,8 +45,7 @@ def command_exists(command: str) -> bool:
 
 
 def choose_wrapper_name() -> str:
-    if shutil.which("9router-proxy") is not None:
-        return "nineRouter-autoproxy"
+    """Always prefer 9router-proxy as primary, fallback to nineRouter-autoproxy if exists."""
     return "9router-proxy"
 
 

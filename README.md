@@ -80,7 +80,7 @@ python3 install.py
 Open a new terminal and run:
 
 ```bash
-nine-router-autoproxy
+9router-proxy
 ```
 
 This auto-configures everything. The proxy runs on **127.0.0.1:8080** by default.
@@ -88,9 +88,9 @@ This auto-configures everything. The proxy runs on **127.0.0.1:8080** by default
 ### Use It
 
 ```bash
-nine-router-autoproxy --run    # Start the proxy
-nine-router-autoproxy --diag   # Check status
-nine-router-autoproxy --menu   # Interactive menu
+9router-proxy --run    # Start the proxy
+9router-proxy --diag   # Check status
+9router-proxy --menu   # Interactive menu
 ```
 
 Configure your app/tool to use proxy: **127.0.0.1:8080**
@@ -148,13 +148,13 @@ To reconfigure, delete the config and run again:
 
 ```bash
 rm ~/.nine_router/config.json
-nine-router-autoproxy
+9router-proxy
 ```
 
 Or use interactive setup:
 
 ```bash
-nine-router-autoproxy --setup
+9router-proxy --setup
 ```
 
 ## Troubleshooting
@@ -166,7 +166,7 @@ Open a new terminal window. The installer adds the command to your PATH.
 ### Proxy not working?
 
 ```bash
-nine-router-autoproxy --diag
+9router-proxy --diag
 ```
 
 ### Need to update?
