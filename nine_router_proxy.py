@@ -768,10 +768,10 @@ class NineRouterPreTester:
         self.schedule_rotation()
 
     def refresh_batch(self):
-        """Fetches a fresh batch of ACTIVE HTTP proxies from ProxyScrape."""
+        """Fetches a fresh batch of ACTIVE HTTP proxies from ProxyScrape with SSL retry fallback."""
         ctx.log.info(f"📡 [Rotator] Fetching {self.batch_size} fresh ACTIVE HTTP proxies from ProxyScrape...")
 
-        url = (
+        https_url = (
             "https://api.proxyscrape.com/v2/"
             "?request=get"
             "&protocol=http"
@@ -782,45 +782,80 @@ class NineRouterPreTester:
             "&simplified=true"
             "&sort=last_checked"
         )
+        
+        http_url = (
+            "http://api.proxyscrape.com/v2/"
+            "?request=get"
+            "&protocol=http"
+            "&timeout=5000"
+            "&ssl=yes"
+            "&anonymity=all"
+            "&country=all"
+            "&simplified=true"
+            "&sort=last_checked"
+        )
 
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
+        # Try HTTPS first, fallback to HTTP on SSL errors
+        urls_to_try = [
+            (https_url, True, 10),      # (url, verify_ssl, timeout)
+            (https_url, False, 10),     # Retry HTTPS without SSL verification
+            (http_url, True, 10),       # Fallback to HTTP
+        ]
 
-            raw_list = response.text.strip().split("\\r\\n")
-            self.raw_proxies = []
-            for p in raw_list:
-                p = p.strip()
-                if ":" in p and self._is_valid_proxy(p):
-                    if p not in self.failed_proxies:
-                        self.raw_proxies.append(p)
+        for attempt_url, verify_ssl, timeout in urls_to_try:
+            try:
+                protocol = "HTTPS (verified)" if attempt_url.startswith("https") and verify_ssl else \
+                           "HTTPS (unverified)" if attempt_url.startswith("https") else "HTTP"
+                ctx.log.debug(f"🔗 [Rotator] Attempting {protocol}: {attempt_url[:50]}...")
+                
+                response = requests.get(attempt_url, timeout=timeout, verify=verify_ssl)
+                response.raise_for_status()
 
-            self.raw_proxies = list(dict.fromkeys(self.raw_proxies))[:self.batch_size]
-            ctx.log.info(f"📥 [Rotator] Loaded {len(self.raw_proxies)} validated HTTP proxies")
+                raw_list = response.text.strip().split("\\r\\n")
+                self.raw_proxies = []
+                for p in raw_list:
+                    p = p.strip()
+                    if ":" in p and self._is_valid_proxy(p):
+                        if p not in self.failed_proxies:
+                            self.raw_proxies.append(p)
 
-        except requests.exceptions.SSLError as exc:
-            ctx.log.error(ErrorCode.format_error("E011", url=url, status="certificate verification failed"))
-            self.raw_proxies = []
-        except requests.exceptions.Timeout as exc:
-            ctx.log.error(ErrorCode.format_error("E012", url=url, timeout=10))
-            self.raw_proxies = []
-        except requests.exceptions.ConnectionError as exc:
-            ctx.log.error(ErrorCode.format_error("E013", host="api.proxyscrape.com", error=str(exc)))
-            self.raw_proxies = []
-        except requests.exceptions.HTTPError as exc:
-            status = getattr(exc.response, 'status_code', 'unknown')
-            code = ErrorCode.classify_http_exception(exc)
-            ctx.log.error(ErrorCode.format_error(code, route=url, status=status, url=url))
-            self.raw_proxies = []
-        except requests.exceptions.InvalidURL as exc:
-            ctx.log.error(ErrorCode.format_error("E016", url=url))
-            self.raw_proxies = []
-        except requests.exceptions.RequestException as exc:
-            ctx.log.error(ErrorCode.format_error("E999", context="proxy fetch", error=str(exc)))
-            self.raw_proxies = []
-        except Exception as exc:
-            ctx.log.error(ErrorCode.format_error("E999", context="proxy fetch", error=str(exc)))
-            self.raw_proxies = []
+                self.raw_proxies = list(dict.fromkeys(self.raw_proxies))[:self.batch_size]
+                ctx.log.info(f"📥 [Rotator] Loaded {len(self.raw_proxies)} validated HTTP proxies via {protocol}")
+                return  # Success, exit retry loop
+
+            except requests.exceptions.SSLError as exc:
+                ctx.log.warn(f"⚠️  [SSL Error] Certificate verification failed on {attempt_url[:40]}... Trying fallback.")
+                # Continue to next URL in the list
+                continue
+            except requests.exceptions.Timeout as exc:
+                ctx.log.error(ErrorCode.format_error("E012", url=attempt_url, timeout=timeout))
+                self.raw_proxies = []
+                return
+            except requests.exceptions.ConnectionError as exc:
+                ctx.log.warn(f"⚠️  [Connection Error] Could not reach {attempt_url[:40]}... Trying next option.")
+                continue
+            except requests.exceptions.HTTPError as exc:
+                status = getattr(exc.response, 'status_code', 'unknown')
+                code = ErrorCode.classify_http_exception(exc)
+                ctx.log.error(ErrorCode.format_error(code, route=attempt_url, status=status, url=attempt_url))
+                self.raw_proxies = []
+                return
+            except requests.exceptions.InvalidURL as exc:
+                ctx.log.error(ErrorCode.format_error("E016", url=attempt_url))
+                self.raw_proxies = []
+                return
+            except requests.exceptions.RequestException as exc:
+                ctx.log.error(ErrorCode.format_error("E999", context="proxy fetch", error=str(exc)))
+                self.raw_proxies = []
+                return
+            except Exception as exc:
+                ctx.log.error(ErrorCode.format_error("E999", context="proxy fetch", error=str(exc)))
+                self.raw_proxies = []
+                return
+
+        # All retry attempts exhausted
+        ctx.log.error("❌ [Rotator] All proxy fetch attempts failed. No fallback available.")
+        self.raw_proxies = []
 
     def _is_valid_proxy(self, proxy_str):
         """Validates proxy is in valid IP:port format."""
