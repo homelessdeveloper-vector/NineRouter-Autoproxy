@@ -22,7 +22,18 @@ A lightweight rotating HTTP proxy helper for 9Router and other tools that need a
 
 ### Install with installer script
 
+From the repository root directory:
+
 ```bash
+chmod +x install.sh
+./install.sh
+```
+
+If you are not already in the project folder, first clone the repo and `cd` into it:
+
+```bash
+git clone https://github.com/noreplystandardprints-sketch/NineRouter-Autoproxy.git
+cd NineRouter-Autoproxy
 chmod +x install.sh
 ./install.sh
 ```
