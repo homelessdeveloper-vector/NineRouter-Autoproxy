@@ -1,53 +1,104 @@
 # NineRouter Autoproxy
 
-A lightweight rotating HTTP proxy helper for 9Router and other tools that need a resilient upstream proxy with auto-rotation, diagnostics, and graceful fallback behavior.
+A resilient rotating HTTP proxy helper for 9Router and other AI/dev tooling that needs a fast, stable upstream proxy with auto-rotation, diagnostics, and graceful fallback behavior.
 
-## Features
+> Never stop coding. Keep your tools online with smart proxy rotation, health checks, and automatic recovery.
+
+[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![mitmproxy](https://img.shields.io/badge/Proxy-mitmproxy-2E7D32?logo=mitmproxy&logoColor=white)](https://mitmproxy.org/) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-5B7CFF)](#)
+
+## Why this project?
+
+If your workflow depends on AI coding tools, proxy routing, or upstream proxy health, one dead endpoint can break an entire session. NineRouter Autoproxy keeps your connection resilient by rotating through healthy proxies, skipping dead candidates, and exposing clear diagnostics when upstream services fail.
+
+## Key features
 
 - Rotates through live HTTP proxies on a timer
 - Tests proxy candidates in parallel and selects the fastest healthy result
 - Avoids reusing the same proxy consecutively
-- Tracks dead proxies in memory to skip repeated retries
-- Includes diagnostics for missing dependencies, missing routes, SSL issues, timeouts, network outages, and more
-- Generates a mitmproxy addon with embedded runtime diagnostics so startup does not crash on certificate failures
-- Automatically copies the local proxy URL to the clipboard when available
-- Supports configurable rotation and dead-proxy memory settings without editing code
-- Provides setup and startup commands without requiring a package manager or framework
+- Keeps a memory of dead proxies so unhealthy endpoints are skipped automatically
+- Validates connectivity, routes, SSL trust, timeouts, and outages with richer diagnostics
+- Generates a mitmproxy addon with embedded runtime checks so startup is safer on certificate failures
+- Copies the active local proxy URL to the clipboard when supported
+- Supports rotation timing and dead-proxy memory configuration without editing code
+- Ships with simple install and launch commands for Linux, macOS, and Windows
 
-## Requirements
+## Works with 9Router and modern AI tooling
 
-- Python 3.9+ already installed
-- mitmproxy installed and available on your PATH (installer will install it if Python is present)
-- Network access to fetch proxy lists and test endpoints
+This project is designed to power 9Router-based workflows and other setups that need a dependable HTTP proxy layer while staying resilient under network issues and noisy upstream providers.
+
+## Quick start
+
+```bash
+9router-proxy
+```
+
+This opens the interactive menu. To run the proxy directly:
+
+```bash
+9router-proxy --run
+```
+
+To jump straight into setup:
+
+```bash
+9router-proxy --setup
+```
+
+To open the interactive menu explicitly:
+
+```bash
+9router-proxy --menu
+```
+
+If `9router-proxy` is already taken on your system, the installer creates `nineRouter-autoproxy` instead:
+
+```bash
+nineRouter-autoproxy --menu
+```
+
+Or run the script directly:
+
+```bash
+python3 nine_router_proxy.py --run
+```
+
+## Installation
+
+### Requirements
+
+- Python 3.9+
+- mitmproxy installed and available on your `PATH`
+- Network access to fetch proxy lists and health-check endpoints
+- 9Router installed for proxy routing
 
 ### Install with installer script
 
-From the repository root directory on Linux/macOS:
+From the repository root on Linux/macOS:
 
 ```bash
 chmod +x install.sh
 ./install.sh
 ```
 
-On any platform with Python installed, you can use the cross-platform installer:
+On any platform with Python installed:
 
 ```bash
 python3 install.py
 ```
 
-On Windows, you can also run:
+On Windows:
 
 ```cmd
 install.bat
 ```
 
-All installers (`install.sh`, `install.py`, and `install.bat`) perform the same installation steps:
+All installers perform the same setup steps:
 
-- install runtime dependencies
-- copy `nine_router_proxy.py` to the install directory
-- create the launcher command `9router-proxy` or `nineRouter-autoproxy` if `9router-proxy` is already taken
+- install Python dependencies
+- copy the proxy script into the install directory
+- create a launcher command such as `9router-proxy` or `nineRouter-autoproxy`
 
-If you are not already in the project folder, first clone the repo and `cd` into it:
+If you are not already in the project folder:
 
 ```bash
 git clone https://github.com/homelessdeveloper-vector/NineRouter-Autoproxy.git
@@ -55,26 +106,6 @@ cd NineRouter-Autoproxy
 chmod +x install.sh
 ./install.sh
 ```
-
-What the installer does:
-
-- Detects an existing Python 3.9+ interpreter
-- Installs Python dependencies: `requests`, `mitmproxy`, and `rich`
-- Copies `nine_router_proxy.py` to `~/.local/bin` on macOS/Linux or `%LOCALAPPDATA%\NineRouterAutoproxy` on Windows
-- Creates a launcher command named `9router-proxy` or `nineRouter-autoproxy` (`nineRouter-autoproxy.cmd` on Windows)
-- Prints the next commands to run after installation
-
-Files in this repository:
-
-- `install.sh`: Linux/macOS shell installer
-- `install.py`: Cross-platform Python installer for Windows, macOS, and Linux
-- `install.bat`: Windows batch installer wrapper for `install.py`
-- `nine_router_proxy.py`: Core proxy script with setup, diagnostics, and runtime logic
-- `9router-proxy` or `nineRouter-autoproxy`: Installed launcher command for easy usage
-
-What the installer does not do:
-
-- It does not install Python itself. You must already have Python 3.9+ installed.
 
 ### Install mitmproxy
 
@@ -90,58 +121,46 @@ Linux:
 python3 -m pip install mitmproxy
 ```
 
-## Quick start
+## 9Router setup guide
 
-```bash
-9router-proxy
-```
+9Router is the app that consumes this proxy. Install it from the official distribution for your platform.
 
-This opens the interactive menu. To run the proxy directly, use:
+### macOS / Linux
 
-```bash
-9router-proxy --run
-```
+- Download and install 9Router from the official site.
+- Ensure the app or executable is available on your system.
 
-To start setup directly:
+### Windows
 
-```bash
-9router-proxy --setup
-```
+- Download and install 9Router from the official site.
+- Ensure the program is present and accessible.
 
-To open the menu explicitly:
+> The installer attempts to detect a 9Router command and warns if it cannot find one. It does not install 9Router automatically.
 
-```bash
-9router-proxy --menu
-```
+### Run guide
 
-If `9router-proxy` is already taken on your system, the installer will create `nineRouter-autoproxy` instead.
-
-```bash
-nineRouter-autoproxy --menu
-```
-
-Or run the legacy script directly:
-
-```bash
-python3 nine_router_proxy.py --run
-```
+1. Install the autoproxy using one of the installers above.
+2. Run `9router-proxy` to open the interactive menu.
+3. Select setup or run directly.
+4. Confirm the proxy port and addon installation when prompted.
+5. In 9Router, configure the HTTP proxy to `127.0.0.1:8080` (or the port chosen during setup).
 
 ## Configuration
 
-The script stores configuration at:
+The script stores configuration in:
 
-- ~/.nine_router/config.json
-- ~/.mitmproxy/nine_router_autoproxy.py
+- `~/.nine_router/config.json`
+- `~/.mitmproxy/nine_router_autoproxy.py`
 
 Default values include:
 
-- port: 8080
-- rotation interval: 60 seconds
-- max workers: 10
-- timeout: 2.0 seconds per proxy test
-- failed proxy memory: 20
+- port: `8080`
+- rotation interval: `60` seconds
+- max workers: `10`
+- timeout: `2.0` seconds per proxy test
+- failed proxy memory: `20`
 
-## Diagnostics
+## Diagnostics and error handling
 
 Run the built-in diagnostic report:
 
@@ -159,30 +178,19 @@ This checks:
 - configured route and fallback health
 - filesystem setup for config and addon files
 
-## Error handling behavior
+The project classifies common upstream problems clearly, including:
 
-The project now includes clearer classification for common failures such as:
-
-- route does not exist (404)
-- access blocked or rate limited (403/429)
+- route does not exist (`404`)
+- access blocked or rate limited (`403` / `429`)
 - SSL certificate verification failures
 - request timeout or network unreachable conditions
 - DNS issues
 - invalid route configuration
 - no available proxies after testing
 
-Each error includes:
+Each error includes a diagnostic code, a human-readable summary, a check description, and a recommended next step.
 
-- a diagnostic code
-- a human-friendly summary
-- a check description
-- an action to fix or retry
-
-### Common SSL certificate failure
-
-If the upstream ProxyScrape API fails with a certificate verification error like `CERTIFICATE_VERIFY_FAILED`, the generated addon will now log a proper E-code instead of crashing with a `NameError`.
-
-Example diagnosis:
+### Example SSL failure
 
 ```text
 ❌ [E011] SSL Certificate Verification Failed
@@ -192,14 +200,7 @@ The remote endpoint could not be verified with the local certificate store
 💡 Action: Check the system date, trust store, and whether a custom proxy is intercepting HTTPS traffic
 ```
 
-This usually means a local trust-store, VPN, firewall, or MITM certificate is intercepting HTTPS traffic.
-
-## Running with 9Router
-
-Configure your 9Router HTTP proxy settings to use:
-
-- 127.0.0.1:8080
-- or localhost:8080
+This normally indicates a local certificate store issue, VPN/firewall interference, or a MITM-style intercept on the network path.
 
 ## Troubleshooting
 
@@ -217,7 +218,7 @@ Check what is using the port:
 lsof -i :8080
 ```
 
-Then stop the process or pick a different port during setup.
+Then stop the process or choose a different port during setup.
 
 ### API or route errors
 
@@ -227,7 +228,15 @@ Use diagnostics:
 python3 nine_router_proxy.py --diag
 ```
 
-If the upstream proxy API returns a certificate problem, timeout, 404, or blocked response, the script now surfaces a clearer explanation and recommended next step.
+If the upstream proxy API returns a certificate problem, timeout, `404`, or rate-limit response, the app surfaces a clearer explanation and recommended recovery path.
+
+## Project files
+
+- `install.sh`: Linux/macOS installer
+- `install.py`: Cross-platform installer
+- `install.bat`: Windows launcher wrapper
+- `nine_router_proxy.py`: Core proxy logic, setup flow, and diagnostics
+- `LICENSE`: MIT license
 
 ## License
 
