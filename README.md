@@ -4,9 +4,11 @@ A resilient rotating HTTP proxy helper for 9Router and other AI/dev tooling that
 
 > Never stop coding. Keep your tools online with smart proxy rotation, health checks, and automatic recovery.
 
-[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![mitmproxy](https://img.shields.io/badge/Proxy-mitmproxy-2E7D32?logo=mitmproxy&logoColor=white)](https://mitmproxy.org/) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-5B7CFF)](#)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![mitmproxy](https://img.shields.io/badge/Proxy-mitmproxy-2E7D32?logo=mitmproxy&logoColor=white)](https://mitmproxy.org/) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-5B7CFF)](#) [![Pre-Alpha](https://img.shields.io/badge/Status-Pre--Alpha-orange)](#)
 
-[🚀 Quick Start](#quick-start) • [💡 Features](#key-features) • [📖 Setup](#installation) • [🔧 Configuration](#configuration)
+[🚀 Quick Start](#quick-start) • [💡 Features](#key-features) • [📖 Setup](#installation) • [⚙️ Installation Guide](#installation-guide) • [🔧 Configuration](#configuration)
+
+> ⚠️ This project is currently in Pre-Alpha stage. It is early, experimental, and actively evolving. Feedback, testing, and issue reports are welcome.
 
 ## Why this project?
 
@@ -33,6 +35,20 @@ This project is designed to power 9Router-based workflows and other setups that 
 ```bash
 9router-proxy
 ```
+
+## Please support the project
+
+If you find this useful, please help keep it moving:
+
+- Star the repo
+- Share it with other developers and AI tool users
+- Open issues for bugs, ideas, and improvements
+- Contribute code, testing, or documentation
+
+Your support helps fund development, improve stability, and keep the project growing.
+
+---
+
 
 This opens the interactive menu. To run the proxy directly:
 
@@ -63,6 +79,10 @@ Or run the script directly:
 ```bash
 python3 nine_router_proxy.py --run
 ```
+
+## Installation Guide
+
+[📦 Install](#installation) • [🧰 Requirements](#requirements) • [⚡ Quick Start](#quick-start)
 
 ## Installation
 
