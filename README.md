@@ -53,18 +53,20 @@ cd NineRouter-Autoproxy
 python3 install.py
 ```
 
-**Make sure you `cd` into the cloned directory before running `python3 install.py`**
+**Important:** Make sure you run `python3 install.py` from inside the cloned directory.
 
-### Install (Option 2: Direct download and install)
+### Install (Option 2: Fresh clone if directory exists)
 
-If you already cloned the repo or just want to reinstall:
+If the directory already exists, remove it first:
 
 ```bash
-cd ~/NineRouter-Autoproxy  # or wherever you cloned it
+rm -rf ~/NineRouter-Autoproxy
+git clone https://github.com/homelessdeveloper-vector/NineRouter-Autoproxy.git
+cd NineRouter-Autoproxy
 python3 install.py
 ```
 
-If the directory doesn't exist yet:
+### Install (Option 3: Direct download)
 
 ```bash
 mkdir -p ~/NineRouter-Autoproxy

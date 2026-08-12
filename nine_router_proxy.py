@@ -1426,7 +1426,14 @@ def main():
     ui = UI()
     config = Config()
     if len(sys.argv) > 1:
-        arg = sys.argv[1].lower()
+        arg = sys.argv[1].lower().strip()
+        # Handle empty or whitespace-only arguments
+        if not arg or arg.startswith('\x00'):
+            arg = None
+    else:
+        arg = None
+    
+    if arg:
         if arg == "--setup":
             SetupWizard(ui, config).run()
         elif arg == "--auto-setup":
