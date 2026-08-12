@@ -645,18 +645,23 @@ class ErrorCode:
     @staticmethod
     def format_error(code: str, **kwargs) -> str:
         if code not in ErrorCode.ERRORS:
-            return f"Unknown error: {code}"
+            return "Unknown error: " + code
 
         err = ErrorCode.ERRORS[code]
-        msg = f"[E{code[-3:]}] {err['title']}\n"
-        msg += f"{err['message']}\n\n"
+        lines = []
+        lines.append("[E" + code[-3:] + "] " + err['title'])
+        lines.append(err['message'])
+        lines.append("")
 
         if 'check' in err:
-            msg += f"Check: {ErrorCode._safe_format(err['check'], **kwargs)}\n"
+            lines.append("Check: " + ErrorCode._safe_format(err['check'], **kwargs))
         if 'action' in err:
-            msg += f"Action: {ErrorCode._safe_format(err['action'], **kwargs)}\n"
+            lines.append("Action: " + ErrorCode._safe_format(err['action'], **kwargs))
 
-        return msg
+        result = ""
+        for line in lines:
+            result = result + line + chr(10)
+        return result
 
     @staticmethod
     def classify_http_exception(exc):
@@ -704,8 +709,13 @@ class NineRouterPreTester:
     def _format_box(self, lines, width=74):
         border_top = "╔" + "═" * width + "╗"
         border_bottom = "╚" + "═" * width + "╝"
-        body = "\n".join(f"║{line.ljust(width)}║" for line in lines)
-        return f"{border_top}\n{body}\n{border_bottom}"
+        body_lines = []
+        for line in lines:
+            body_lines.append("║" + line.ljust(width) + "║")
+        body = ""
+        for body_line in body_lines:
+            body = body + body_line + chr(10)
+        return border_top + chr(10) + body + border_bottom
 
     def _announce_startup(self):
         """Announce localhost HTTP proxy details for 9router configuration."""
