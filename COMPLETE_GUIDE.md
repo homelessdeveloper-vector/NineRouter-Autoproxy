@@ -34,6 +34,8 @@ On Windows, run:
 install.bat
 ```
 
+All installers perform the same steps and create the same launcher command.
+
 If you are not in the project folder yet, first clone the repo and `cd` into it:
 
 ```bash
@@ -44,6 +46,14 @@ chmod +x install.sh
 ```
 
 This installer installs dependencies, configures the script, and creates a launcher command named `nine-router-autoproxy`.
+
+Repository files:
+
+- `install.sh`: Linux/macOS install script
+- `install.py`: Cross-platform Python installer
+- `install.bat`: Windows wrapper installer
+- `nine_router_proxy.py`: Proxy runtime and setup script
+- `nine-router-autoproxy`: Installed command launcher
 
 ### 2. Run Interactive Menu
 

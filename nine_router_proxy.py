@@ -1371,7 +1371,7 @@ def main():
             print("Usage: python3 nine_router_proxy.py [--setup|--run|--diag|--menu|--help]")
             sys.exit(1)
     else:
-        ProxyRunner(ui, config).run()
+        MainMenu().show()
 
 
 if __name__ == "__main__":

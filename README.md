@@ -29,7 +29,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-On any platform with Python installed (including Windows), you can use the cross-platform installer:
+On any platform with Python installed, you can use the cross-platform installer:
 
 ```bash
 python3 install.py
@@ -40,6 +40,12 @@ On Windows, you can also run:
 ```cmd
 install.bat
 ```
+
+All installers (`install.sh`, `install.py`, and `install.bat`) perform the same installation steps:
+
+- install runtime dependencies
+- copy `nine_router_proxy.py` to the install directory
+- create the launcher command `nine-router-autoproxy`
 
 If you are not already in the project folder, first clone the repo and `cd` into it:
 
@@ -57,6 +63,14 @@ What the installer does:
 - Copies `nine_router_proxy.py` to `~/.local/bin` on macOS/Linux or `%LOCALAPPDATA%\NineRouterAutoproxy` on Windows
 - Creates a launcher command named `nine-router-autoproxy` (`nine-router-autoproxy.cmd` on Windows)
 - Prints the next commands to run after installation
+
+Files in this repository:
+
+- `install.sh`: Linux/macOS shell installer
+- `install.py`: Cross-platform Python installer for Windows, macOS, and Linux
+- `install.bat`: Windows batch installer wrapper for `install.py`
+- `nine_router_proxy.py`: Core proxy script with setup, diagnostics, and runtime logic
+- `nine-router-autoproxy`: Installed launcher command for easy usage
 
 What the installer does not do:
 
@@ -82,7 +96,23 @@ python3 -m pip install mitmproxy
 nine-router-autoproxy
 ```
 
-This starts the proxy immediately. Use `--menu` to open the interactive menu instead:
+This opens the interactive menu. To run the proxy directly, use:
+
+```bash
+nine-router-autoproxy --run
+```
+
+To start setup directly:
+
+```bash
+nine-router-autoproxy --setup
+```
+
+To open the menu explicitly:
+
+```bash
+nine-router-autoproxy --menu
+```
 
 ```bash
 nine-router-autoproxy --menu
